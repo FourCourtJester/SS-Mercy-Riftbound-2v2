@@ -1,0 +1,15 @@
+services:
+  ss-mercy-riftbound-2v2:
+    build: ./
+    command: sleep infinity
+    # Host networking, to match the other SS- studios. This show has no plugins,
+    # so nothing here needs to reach a service on the host -- but OBS loads the
+    # graphics from localhost:5173, and with the host's network that address is
+    # the dev server with no port mapping to get wrong. It also means adding a
+    # plugin later (OBS WebSocket on 127.0.0.1:4455, say) works without touching
+    # this file; a bridged container could not reach it.
+    network_mode: host
+    restart: unless-stopped
+    volumes:
+      - ..:/usr/src/app:cached
+      - ~/.ssh:/home/node/.ssh

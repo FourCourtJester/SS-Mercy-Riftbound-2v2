@@ -1,0 +1,15 @@
+/* Mercy, floating on the slate. */
+.mercy-float {
+  animation: mercy-float 7s ease-in-out infinite;
+  will-change: transform;
+}
+
+@keyframes mercy-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(-3deg);
+  }
+  50% {
+    transform: translate3d(0, -26px, 0) rotate(2deg);
+  }
+}

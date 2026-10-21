@@ -1,5 +1,7 @@
-import Match from './panels/Match'
-import Scores from './panels/Scores'
+import Bracket from './panels/Bracket'
+import Casters from './panels/Casters'
+import Groups from './panels/Groups'
+import Slate from './panels/Slate'
 
 // The operator's board: which panels it has, and in what order.
 //
@@ -9,17 +11,15 @@ import Scores from './panels/Scores'
 // half-typed name never reaches air -- the save button and Ctrl+S are already on the
 // page, alongside the image store and the browser-source URLs to paste into OBS.
 //
-// To change several things with one click, write a mutation in
-// src/mutations/index.js and dispatch it:
-//
-//   const mutate = useVelcroMutate()
-//
-//   <button onClick={() => mutate('my:example', { team: 'home' })}>Big play</button>
+// The order follows the show: slate before the stream, casters, then the group
+// stage, then the bracket.
 export default function Control() {
   return (
     <>
-      <Scores />
-      <Match />
+      <Slate />
+      <Casters />
+      <Groups />
+      <Bracket />
     </>
   )
 }

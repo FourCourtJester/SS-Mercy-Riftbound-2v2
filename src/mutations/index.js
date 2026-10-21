@@ -42,18 +42,8 @@
 //
 // See docs/data.md for the whole surface and worked examples.
 
+import { tournament } from './tournament'
+
 export const mutations = {
-  /**
-   * A no-op you can wire to a button to check the round trip works, then replace.
-   *
-   * `mutate('my:example', { team: 'home' })`
-   */
-  'my:example'(ctx, payload) {
-    // Write what should change. For example, landing together as one change on air:
-    //
-    //   ctx.add(`variables.${payload.team}.score`, 1)
-    //   ctx.set({ 'toggles.bigplay': true })
-    void ctx
-    void payload
-  },
+  ...tournament,
 }

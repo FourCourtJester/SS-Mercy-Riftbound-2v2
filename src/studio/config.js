@@ -7,7 +7,7 @@
  * studio publishes -- `SS - My Studio - Lower Thirds / Single`. Change it whenever
  * you like: it is a label and nothing reads it back.
  */
-export const STUDIO_NAME = 'My Studio'
+export const STUDIO_NAME = 'Mercy Riftbound 2v2'
 
 /**
  * The name this studio's data is stored under.
@@ -19,4 +19,4 @@ export const STUDIO_NAME = 'My Studio'
  * Separate from `STUDIO_NAME` for that reason: retitling a show on air should not
  * be the same act as filing it somewhere new.
  */
-export const STUDIO_ID = 'my-studio'
+export const STUDIO_ID = 'ss-mercy-riftbound-2v2'
