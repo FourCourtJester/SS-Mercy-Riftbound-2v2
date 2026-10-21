@@ -1,0 +1,325 @@
+/*
+ * The animated sky behind every full-screen graphic. See SpaceBackground.jsx.
+ *
+ * Everything moves with transform and opacity only, so OBS composites it on the GPU
+ * rather than repainting 1920x1080 every frame.
+ */
+
+.space {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #050c22;
+}
+
+.space-base {
+  position: absolute;
+  inset: -3%;
+  background-position: center;
+  background-size: cover;
+  animation: space-breathe 90s ease-in-out infinite;
+  will-change: transform;
+}
+
+@keyframes space-breathe {
+  0%,
+  100% {
+    transform: scale(1) translate3d(0, 0, 0);
+  }
+  50% {
+    transform: scale(1.05) translate3d(-1%, 0.6%, 0);
+  }
+}
+
+.space-nebula {
+  position: absolute;
+  border-radius: 50%;
+  mix-blend-mode: screen;
+  filter: blur(40px);
+  will-change: transform, opacity;
+}
+
+.space-nebula-a {
+  top: -10%;
+  left: -6%;
+  width: 900px;
+  height: 640px;
+  background: radial-gradient(closest-side, rgba(64, 128, 255, 0.34), rgba(64, 128, 255, 0));
+  animation: space-nebula-a 70s ease-in-out infinite;
+}
+
+.space-nebula-b {
+  top: 8%;
+  right: -10%;
+  width: 1000px;
+  height: 700px;
+  background: radial-gradient(closest-side, rgba(110, 170, 255, 0.22), rgba(110, 170, 255, 0));
+  animation: space-nebula-b 95s ease-in-out infinite;
+}
+
+@keyframes space-nebula-a {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translate3d(220px, 60px, 0) scale(1.15);
+    opacity: 1;
+  }
+}
+
+@keyframes space-nebula-b {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1.1);
+    opacity: 1;
+  }
+  50% {
+    transform: translate3d(-260px, 90px, 0) scale(0.9);
+    opacity: 0.6;
+  }
+}
+
+/* One tile wider and taller than the screen, slid one tile per loop: seamless. */
+.space-dust {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: calc(100% + var(--tile-w));
+  height: calc(100% + var(--tile-h));
+  background-repeat: repeat;
+  animation-name: space-dust;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform;
+}
+
+@keyframes space-dust {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(calc(-1 * var(--tile-w)), calc(-1 * var(--tile-h)), 0);
+  }
+}
+
+.space-star {
+  position: absolute;
+  border-radius: 50%;
+  background: #eef4ff;
+  box-shadow: 0 0 6px 1px rgba(170, 205, 255, 0.75);
+  animation-name: space-twinkle;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  will-change: transform, opacity;
+}
+
+/* A four-point glint, for the handful of stars that catch the eye. */
+.space-sparkle {
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  translate: -50% -50%;
+}
+
+.space-sparkle::before,
+.space-sparkle::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, transparent, rgba(240, 246, 255, 0.95) 50%, transparent) center / 100% 2px no-repeat,
+    linear-gradient(0deg, transparent, rgba(240, 246, 255, 0.95) 50%, transparent) center / 2px 100% no-repeat;
+}
+
+.space-sparkle::after {
+  inset: 34%;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ffffff 0, rgba(190, 215, 255, 0.8) 35%, rgba(190, 215, 255, 0) 70%);
+}
+
+@keyframes space-twinkle {
+  0%,
+  100% {
+    opacity: var(--low, 0.3);
+    transform: scale(0.7);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
+.space-comet-track {
+  position: absolute;
+  width: 0;
+  height: 0;
+  transform-origin: 0 0;
+}
+
+.space-comet {
+  position: absolute;
+  top: -1px;
+  left: 0;
+  width: 280px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, rgba(150, 195, 255, 0), rgba(190, 220, 255, 0.55) 70%, #ffffff);
+  opacity: 0;
+  animation-name: space-comet;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform, opacity;
+}
+
+.space-comet::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: -3px;
+  width: 6px;
+  height: 6px;
+  margin-top: -3px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow:
+    0 0 10px 3px rgba(190, 220, 255, 0.9),
+    0 0 26px 8px rgba(80, 140, 255, 0.45);
+}
+
+/* Most of each loop is spent waiting, so a comet is an event rather than traffic. */
+@keyframes space-comet {
+  0% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0;
+  }
+  1% {
+    opacity: 1;
+  }
+  7% {
+    opacity: 0.9;
+  }
+  9% {
+    transform: translate3d(1700px, 0, 0);
+    opacity: 0;
+  }
+  100% {
+    transform: translate3d(1700px, 0, 0);
+    opacity: 0;
+  }
+}
+
+/*
+ * A glint: one of mercbkg's painted stars flaring into a long four-point cross and
+ * turning a little as it fades. Most of each loop is spent waiting, like the comets.
+ * `translate` centres it on its star separately from the animated `transform`.
+ */
+.space-glint {
+  position: absolute;
+  width: 190px;
+  height: 190px;
+  translate: -50% -50%;
+  opacity: 0;
+  animation-name: space-glint;
+  animation-timing-function: ease-out;
+  animation-iteration-count: infinite;
+  will-change: transform, opacity;
+}
+
+.space-glint::before,
+.space-glint::after {
+  content: '';
+  position: absolute;
+}
+
+.space-glint::before {
+  inset: 0;
+  background:
+    linear-gradient(90deg, transparent, rgba(236, 244, 255, 0.95) 50%, transparent) center / 100% 2px no-repeat,
+    linear-gradient(0deg, transparent, rgba(236, 244, 255, 0.95) 50%, transparent) center / 2px 100% no-repeat,
+    linear-gradient(45deg, transparent 35%, rgba(190, 215, 255, 0.5) 50%, transparent 65%) center / 40% 1px no-repeat;
+}
+
+.space-glint::after {
+  inset: 38%;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ffffff 0, rgba(175, 208, 255, 0.75) 30%, rgba(120, 170, 255, 0) 70%);
+}
+
+@keyframes space-glint {
+  0%,
+  86% {
+    opacity: 0;
+    transform: scale(0.2) rotate(0deg);
+  }
+  90% {
+    opacity: 1;
+    transform: scale(1) rotate(18deg);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.5) rotate(45deg);
+  }
+}
+
+/*
+ * Mercy's diamond shards rising from below the screen to above it. The rise and the
+ * sway are separate elements with separate loops of different lengths, so no two
+ * passes of a shard look the same.
+ */
+.space-shard {
+  position: absolute;
+  top: 100%;
+  opacity: 0;
+  animation-name: space-shard-rise;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes space-shard-rise {
+  0% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0;
+  }
+  10%,
+  80% {
+    opacity: var(--alpha, 0.6);
+  }
+  100% {
+    transform: translate3d(0, -1300px, 0);
+    opacity: 0;
+  }
+}
+
+.space-shard-sway {
+  animation-name: space-shard-sway;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+  will-change: transform;
+}
+
+@keyframes space-shard-sway {
+  from {
+    transform: translate3d(calc(-1 * var(--reach, 20px)), 0, 0) rotate(-16deg);
+  }
+  to {
+    transform: translate3d(var(--reach, 20px), 0, 0) rotate(16deg);
+  }
+}
+
+.space-shard-art {
+  display: block;
+  width: 100%;
+  height: auto;
+  filter: drop-shadow(0 0 8px rgba(150, 192, 255, 0.7));
+}
+
+.space-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 45%, rgba(5, 12, 34, 0) 55%, rgba(5, 12, 34, 0.55) 100%);
+  pointer-events: none;
+}

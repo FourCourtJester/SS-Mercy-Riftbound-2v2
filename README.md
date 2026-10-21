@@ -1,4 +1,4 @@
-# My Studio
+# Mercy Riftbound 2v2
 
 A [Single Studio](https://fourcourtjester.github.io/Single-Studio/) broadcast
 graphics project: an operator's board that runs as a dock inside OBS, and one
