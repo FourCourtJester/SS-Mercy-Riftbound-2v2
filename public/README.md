@@ -6,3 +6,8 @@ keeps working wherever the studio is deployed.
 For images an operator adds during a show, use the image store in the board's header
 instead. Those live with the show rather than with the build, so they can change
 without a redeploy and reach every machine in the room.
+
+**In this studio:** `mercbkg.png`, `2v2InviteText.png` and `Mercy.png` are the
+client's brand art, as supplied; `brand/logo.png` and `brand/mercy.png` are the logo
+and mascot trimmed to their visible pixels by `scripts/trim-png.mjs`, which is what the
+graphics use. Player logos are not here: operators add them to the image store.
