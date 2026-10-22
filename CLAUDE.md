@@ -88,8 +88,10 @@ board and mutations so they never disagree about who is first.
 | `bracket.{sf1,sf2,final}.winner` | `'top'` or `'bottom'`. |
 
 **Ranking:** wins, then fewest losses, then `tb` (tiebreak — board only, never on
-air; the producer applies whatever the event rules say), then slot order. Teams
-level on all three share a rank. W is the emphasised column on air. Until a group has any result, ranks are 1–4 in
+air), then slot order. Teams level on all three share a rank. W is the emphasised
+column on air. **Confirmed with the client:** teams that tie play a tiebreak, and
+whoever wins it moves on — the operator gives them +1 Tiebreak (a three-way tie
+takes 2 / 1 / 0). Until a group has any result, ranks are 1–4 in
 slot order.
 
 **Advancing** (the highlight) means *through*: in the top two and not level with the
@@ -105,10 +107,10 @@ semis from current standings — writes team keys, clears all scores/results),
 final, Semi 1 → top, Semi 2 → bottom; changing a semi clears a final the old winner
 had won), `bracket:reset`.
 
-**The fill is a guess** (A1 v B2, B1 v A2) the producer has not confirmed. The
-escape hatch is the board: every bracket slot is a dropdown of all eight teams
+**The fill is confirmed correct** (A1 v B2, B1 v A2). The escape hatch stays anyway,
+by the producer's decision: every bracket slot is a dropdown of all eight teams
 ("A1 · Nova & Orbit"), so any pairing can be set by hand without breaking the link
-to the groups.
+to the groups. Do not remove it.
 
 Show data lives in the browser that runs the board (IndexedDB), not in the repo. Test
 data typed into Chrome does not appear in OBS — run the board as an OBS custom dock to
@@ -265,12 +267,14 @@ the project's dependencies:
    the camera positions for `caster-webcams`. Write data from a studio page first;
    the composite page has no port.
 
-## Open questions for the client
+## Answered by the client
 
-1. Are tiebreaks considered, and how? The Tiebreak value is ready for whatever they
-   decide.
-2. Is the bracket A1 v B2, B1 v A2? Any pairing can be set by hand meanwhile.
-3. Always two casters, or are solo / three-caster layouts needed?
+- **Tiebreaks:** a tie is settled by a tiebreak; the winner moves on (see Ranking).
+- **Bracket:** A1 v B2, B1 v A2 is right. Keep the manual override anyway.
+- **Casters:** always two — "today". A solo or three-caster layout would be a new
+  variant of `caster-webcams`, if it ever comes up.
+
+Nothing is open.
 
 ## Upstream notes
 
