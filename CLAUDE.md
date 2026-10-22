@@ -23,6 +23,11 @@ Two pools of four teams play a round robin; the top two of each pool go to a
 four-team single-elimination bracket (Semifinal 1: A1 v B2, Semifinal 2: B1 v A2,
 then the Final). No plugins — every value is typed on the board.
 
+**A "team" is a pair of players and has no name of its own** (client feedback): each
+player has a name and a logo, and on air a team is drawn as two logos side by side
+with the two names stacked ([Pair.jsx](src/components/Pair.jsx)). There are no
+points and no seeds anywhere.
+
 All graphics are full-screen and sit **outside the game scene**. Brand assets came
 from the client: `mercbkg.png` (sky), `2v2InviteText.png` (logo, "presented by
 Syncd"), `Mercy.png` (the mascot). The client's two mockups (a caster layout and a
@@ -48,6 +53,20 @@ camera is not 16:9, use Edit Transform → "Scale to outer bounds" at 800×450 w
 two solid rings (6px cream, 6px blue, drawn outside the window) cover the camera's
 square corners, and a few pixels of misalignment on any edge.
 
+## Deploying
+
+The live site is https://fourcourtjester.github.io/SS-Mercy-Riftbound-2v2/ (board at
+`#/`, graphics at `#/source/<name>`), built and published by
+[.github/workflows/pages.yml](.github/workflows/pages.yml) on every push to `main`.
+
+**Pages' source must be "GitHub Actions"**, not "Deploy from a branch". On branch
+deploys GitHub runs its own `pages-build-deployment` *after* our workflow and replaces
+the built site with the raw repo, whose `index.html` loads `/src/main.jsx` — a blank
+page. Both runs report success, so nothing looks wrong. Check with
+`gh api repos/FourCourtJester/SS-Mercy-Riftbound-2v2/pages --jq .build_type` (want
+`workflow`). The CDN caches for 10 minutes; add `?v=<anything>` to see a deploy
+immediately.
+
 ## Data
 
 Everything is under `variables` unless noted. Shape and ranking live in
@@ -60,36 +79,38 @@ board and mutations so they never disagree about who is first.
 | `timers.slate` | The slate countdown (a `timers` path, not `variables`). |
 | `casters.{1,2}.name` / `.handle` | Name plates. Handle optional. |
 | `casters.message` | Bar under the cameras; empty hides it. |
-| `standings.title` / `.note` / `.a` / `.b` / `.logos` | Headings, footer, group names, `'hidden'` hides logos. |
-| `groups.{a,b}.{1-4}.name` / `.players` / `.logo` | A team, at a fixed slot. Players and logo optional. |
-| `groups.{a,b}.{1-4}.w` / `.l` / `.pts` / `.tb` | Results. Counters (Stepper writes increments). |
+| `standings.title` / `.note` / `.a` / `.b` / `.logos` | Headings, footer (empty hides it), group names, `'hidden'` hides logos. |
+| `groups.{a,b}.{1-4}.{p1,p2}.name` / `.logo` | A team's two players, at a fixed slot. Logos optional. |
+| `groups.{a,b}.{1-4}.w` / `.l` / `.tb` | Results. Counters (Stepper writes increments). |
 | `bracket.title` / `.logos` | Heading, `'hidden'` hides logos. |
-| `bracket.{sf1,sf2,final}.{top,bottom}.team` | Which team: a group slot key, `a1`–`b4`. **A reference, not a copy** — name, players and logo are looked up in `groups` on the way to air, so the bracket can never drift from the groups. |
-| `bracket.{sf1,sf2,final}.{top,bottom}.seed` / `.score` | The seed label on air (`A1`; fixed when seeded, editable) and the score. |
+| `bracket.{sf1,sf2,final}.{top,bottom}.team` | Which team: a group slot key, `a1`–`b4`. **A reference, not a copy** — the players and their logos are looked up in `groups` on the way to air, so the bracket can never drift from the groups. |
+| `bracket.{sf1,sf2,final}.{top,bottom}.score` | The score. |
 | `bracket.{sf1,sf2,final}.winner` | `'top'` or `'bottom'`. |
 
-**Ranking:** points, then wins, then fewest losses, then `tb` (tiebreak — board only,
-never on air; the producer applies whatever the event rules say), then slot order.
-Teams level on all four share a rank. Until a group has any result, ranks are 1–4 in
+**Ranking:** wins, then fewest losses, then `tb` (tiebreak — board only, never on
+air), then slot order. Teams level on all three share a rank. W is the emphasised
+column on air. **Confirmed with the client:** teams that tie play a tiebreak, and
+whoever wins it moves on — the operator gives them +1 Tiebreak (a three-way tie
+takes 2 / 1 / 0). Until a group has any result, ranks are 1–4 in
 slot order.
 
 **Advancing** (the highlight) means *through*: in the top two and not level with the
 team in 3rd. A tie across the cut marks neither team until a result or a tiebreak
-separates them (1-0-0-0 points: one team through, three unmarked, all reading "2").
-`bracket:seed` still seeds by position, so with a tie across the cut it falls back to
-slot order — set a tiebreak first.
+separates them (one team with the only win: one team through, three unmarked, all
+reading "2"). `bracket:fill` fills by position, so with a tie across the cut it falls
+back to slot order — set a tiebreak first.
 
 **Mutations** ([src/mutations/tournament.js](src/mutations/tournament.js)):
-`groups:reset` (zero W/L/Pts/TB, keep names), `bracket:seed` (semis from current
-standings — writes team keys and seed labels, clears all scores/results),
-`bracket:winner { match, side }` (toggle; a semi's winner's team key and seed label
-go into the final, Semi 1 → top, Semi 2 → bottom; changing a semi clears a final the
-old winner had won), `bracket:reset`.
+`groups:reset` (zero W/L/TB, keep players), `bracket:fill` ("Fill from standings":
+semis from current standings — writes team keys, clears all scores/results),
+`bracket:winner { match, side }` (toggle; a semi's winner's team key goes into the
+final, Semi 1 → top, Semi 2 → bottom; changing a semi clears a final the old winner
+had won), `bracket:reset`.
 
-**Seeding is a guess** (A1 v B2, B1 v A2) the producer has not confirmed. The escape
-hatch is the board: every bracket slot is a dropdown of all eight teams and the seed
-label is free text, so any pairing can be set by hand without breaking the link to
-the groups.
+**The fill is confirmed correct** (A1 v B2, B1 v A2). The escape hatch stays anyway,
+by the producer's decision: every bracket slot is a dropdown of all eight teams
+("A1 · Nova & Orbit"), so any pairing can be set by hand without breaking the link
+to the groups. Do not remove it.
 
 Show data lives in the browser that runs the board (IndexedDB), not in the repo. Test
 data typed into Chrome does not appear in OBS — run the board as an OBS custom dock to
@@ -128,13 +149,20 @@ share one store with the browser sources.
   small companion) rising bottom to top and swaying. Their gradient and blur are one
   shared `<defs>` referenced by id.
 - [Fitted](src/components/Fitted.jsx) — one line, never wraps or clips: narrows the
-  font's width axis 125% → 75%, then `scaleX` with no floor. Team names and the
-  group-name stickers use it. Room is tight on the standings: a team name gets
-  ~230px with logos shown, so even "Comet Crew" (10 characters) is narrowed there;
-  ~15–18 still read well, 25+ get cramped. The bracket gives names more room.
-  Hiding logos adds ~110px on the standings.
-- Group-name stickers hug a short name and stop at 452px — what the W / L / PTS
-  labels leave — then fit. A content-sized box with a `max-w` works with Fitted;
+  font's width axis 125% → 75%, then `scaleX` with no floor. Player names and the
+  group-name stickers use it. On the standings a player name gets ~250px at 36px
+  with logos shown (~420px hidden); "Interstellarwanderer" (20 characters) narrows
+  but reads.
+- [Pair.jsx](src/components/Pair.jsx) — `PairLogos` (two circles side by side —
+  player logos are round; the square box clips to the circle, so whitespace corners
+  in an image disappear; an empty one keeps its place with a faint star) and `PairNames` (two fitted lines; a
+  pair with nobody named shows one dimmed placeholder, one missing name shows
+  "TBD"). Standings, bracket and the Winners box all use them at their own sizes.
+- The bracket's **Winners** box sits under the Final with the winning pair's logos
+  and names, and appears only once a final winner is marked. It is centred in the
+  space between the Final and the bottom of the screen by a box filling that space.
+- Group-name stickers hug a short name and stop at 562px — what the W / L labels
+  leave — then fit. A content-sized box with a `max-w` works with Fitted;
   core's `<Variable fit>` does not, because it measures against the first ancestor
   whose width does not depend on the text, which here is the whole 800px row.
 - [FitLines](src/components/FitLines.jsx) — wraps, but steps the font down (slate:
@@ -163,14 +191,14 @@ share one store with the browser sources.
 - [FillStepper](src/control/FillStepper.jsx) — a `Stepper` whose number field fills its
   column. The stock one is a fixed 160px and sits in the corner of a wider cell.
 - Groups: one card per team, top to bottom; 2 across at md, 4 from lg. A card
-  folds to one line — slot, saved name, record (`A1 · Comet Crew · 2–0 · 6 pts`) — so
-  a folded group still reads at a glance; the name field is labelled "Name" since
-  the card header carries the slot. The four
+  folds to one line — slot, saved players, record (`A1 · Nova & Orbit · 3–0`) — so a
+  folded group still reads at a glance. Open: Player 1 + logo, Player 2 + logo, then
+  Wins / Losses / Tiebreak, with dividers between. The
   steppers go two-up via a **container query** on the card (`@2xs:grid-cols-2`),
   since card width depends on how many share the line, not on the window.
 - Bracket: matches stack at md and go 3 across from lg (a third of the board at md is
   ~200px — too narrow for a stepper and anything beside it). Each team is one `Row`:
-  `md` 5/2/3/2 on one line, `lg` 8/4 + 8/4 on two.
+  team dropdown, score, result — `md` 6/4/2 on one line, `lg` 12 then 8/4.
 - [Divider](src/control/Divider.jsx) — an `<hr>` between groups of controls in a
   panel (Slate, Caster webcams, Group standings). Core's `Break` is deprecated and
   draws nothing.
@@ -239,13 +267,14 @@ the project's dependencies:
    the camera positions for `caster-webcams`. Write data from a studio page first;
    the composite page has no port.
 
-## Open questions for the client
+## Answered by the client
 
-1. How are group points awarded? Pts is typed by hand; if it is a fixed amount per
-   win it could be derived from W.
-2. Always two casters, or are solo / three-caster layouts needed?
-3. Will teams have names, or be known by their players? The Players field is optional
-   and hidden on air when empty; remove it if it is never used.
+- **Tiebreaks:** a tie is settled by a tiebreak; the winner moves on (see Ranking).
+- **Bracket:** A1 v B2, B1 v A2 is right. Keep the manual override anyway.
+- **Casters:** always two — "today". A solo or three-caster layout would be a new
+  variant of `caster-webcams`, if it ever comes up.
+
+Nothing is open.
 
 ## Upstream notes
 

@@ -8,10 +8,10 @@ import { Divider } from '../Divider'
 import { FillStepper } from '../FillStepper'
 import { HEADER_BUTTON, Panel } from '../Panel'
 
-// The group stage. Teams are typed into fixed slots; the graphic ranks them by
-// points, then wins, then fewest losses, so nobody has to reorder anything.
+// The group stage. A team is a pair of players, typed into a fixed slot; the
+// graphic ranks them by wins, then fewest losses, so nobody has to reorder anything.
 //
-// Tiebreak never goes on air. Two teams level on all three show the same rank
+// Tiebreak never goes on air. Two teams level on wins and losses show the same rank
 // until somebody gives one of them the higher tiebreak.
 export default function Groups() {
   const mutate = useVelcroMutate()
@@ -24,7 +24,7 @@ export default function Groups() {
           <Confirm
             label="Zero all results"
             tone="warn"
-            ask="Zero every win, loss, point and tiebreak?"
+            ask="Zero every win, loss and tiebreak?"
             onConfirm={() => mutate('groups:reset')}
             className={HEADER_BUTTON}
           />
@@ -32,7 +32,7 @@ export default function Groups() {
       >
         <Row>
           <Field name="standings.title" label="Heading" placeholder="Group Stage" />
-          <Field name="standings.note" label="Footer" placeholder="Top 2 of each group advance to the playoffs" />
+          <Field name="standings.note" label="Footer" placeholder="Shown under the groups; empty hides it" />
         </Row>
         <Divider />
         <Row>
@@ -40,7 +40,7 @@ export default function Groups() {
           <Field name="standings.b" label="Group B name" placeholder="Group B" />
         </Row>
         <Divider />
-        <Select name="standings.logos" label="Team logos" placeholder="Shown" options={[{ label: 'Hidden', value: 'hidden' }]} />
+        <Select name="standings.logos" label="Player logos" placeholder="Shown" options={[{ label: 'Hidden', value: 'hidden' }]} />
       </Panel>
 
       {GROUPS.map((group) => (
@@ -59,9 +59,10 @@ export default function Groups() {
 }
 
 /**
- * One team as a card, alternating shades with its neighbours, that folds down to
- * one line: slot, name and record, so a folded group still reads at a glance. The
- * line shows what is saved -- an unsaved name appears once it is.
+ * One team -- a pair of players -- as a card, alternating shades with its
+ * neighbours, that folds down to one line: slot, players and record, so a folded
+ * group still reads at a glance. The line shows what is saved -- an unsaved name
+ * appears once it is.
  *
  * The results go two to a line when the card is wide enough for two steppers --
  * measured on the card itself, with a container query, since how wide a card is
@@ -73,10 +74,11 @@ function Team({ group, slot }) {
   const [collapsed, toggle] = useCollapsed()
   const body = useId()
 
-  const name = useVelcroValue(`variables.${path}.name`)
+  const p1 = useVelcroValue(`variables.${path}.p1.name`)
+  const p2 = useVelcroValue(`variables.${path}.p2.name`)
   const w = useVelcroValue(`variables.${path}.w`, 0)
   const l = useVelcroValue(`variables.${path}.l`, 0)
-  const pts = useVelcroValue(`variables.${path}.pts`, 0)
+  const pair = [p1, p2].filter(Boolean).join(' & ')
 
   return (
     <div className="@container flex min-w-0 flex-col gap-3 rounded-md border border-slate-800 p-3 odd:bg-slate-950/60 even:bg-slate-800/60">
@@ -89,20 +91,22 @@ function Team({ group, slot }) {
       >
         <Chevron collapsed={collapsed} />
         <span className="shrink-0 font-semibold tracking-wide text-slate-400">{label}</span>
-        <span className={`min-w-0 flex-1 truncate ${name ? 'text-slate-200' : 'text-slate-500 italic'}`}>{name || 'No name yet'}</span>
+        <span className={`min-w-0 flex-1 truncate ${pair ? 'text-slate-200' : 'text-slate-500 italic'}`}>{pair || 'No players yet'}</span>
         <span className="shrink-0 text-xs text-slate-400 tabular-nums">
-          {w}–{l} · {pts} pts
+          {w}–{l}
         </span>
       </button>
 
       <div id={body} className={`flex flex-col gap-3 ${collapsed ? 'hidden' : ''}`} hidden={collapsed}>
-        <Field name={`${path}.name`} label="Name" placeholder="Team name" />
-        <Field name={`${path}.players`} label="Players" placeholder="Player & Player" />
-        <ImagePicker name={`${path}.logo`} label="Logo" />
+        <Field name={`${path}.p1.name`} label="Player 1" placeholder="Name" />
+        <ImagePicker name={`${path}.p1.logo`} label="Player 1 logo" />
+        <Divider />
+        <Field name={`${path}.p2.name`} label="Player 2" placeholder="Name" />
+        <ImagePicker name={`${path}.p2.logo`} label="Player 2 logo" />
+        <Divider />
         <div className="grid gap-3 @2xs:grid-cols-2">
           <FillStepper name={`${path}.w`} label="Wins" />
           <FillStepper name={`${path}.l`} label="Losses" />
-          <FillStepper name={`${path}.pts`} label="Points" />
           <FillStepper name={`${path}.tb`} label="Tiebreak" />
         </div>
       </div>

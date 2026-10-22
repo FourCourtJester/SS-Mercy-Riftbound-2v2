@@ -1,4 +1,4 @@
-import { BRACKET_FIELDS, FEEDS, GROUPS, MATCHES, SLOTS, standings, teamKey } from '../components/tournament'
+import { FEEDS, GROUPS, MATCHES, SLOTS, standings, teamKey } from '../components/tournament'
 
 // The group stage and the bracket. See src/components/tournament.js for the shape.
 
@@ -6,9 +6,9 @@ import { BRACKET_FIELDS, FEEDS, GROUPS, MATCHES, SLOTS, standings, teamKey } fro
 const clearing = (ctx, prefix) => Object.keys(ctx.collect(prefix)).map((key) => [`${prefix}.${key}`, undefined])
 
 export const tournament = {
-  /** Zero every team's W, L, points and tiebreak. Names, players and logos stay. */
+  /** Zero every team's wins, losses and tiebreak. Players and logos stay. */
   'groups:reset'(ctx) {
-    ctx.write(GROUPS.flatMap((group) => SLOTS.flatMap((slot) => ['w', 'l', 'pts', 'tb'].map((field) => [`variables.groups.${group}.${slot}.${field}`, undefined]))))
+    ctx.write(GROUPS.flatMap((group) => SLOTS.flatMap((slot) => ['w', 'l', 'tb'].map((field) => [`variables.groups.${group}.${slot}.${field}`, undefined]))))
   },
 
   /**
@@ -16,22 +16,19 @@ export const tournament = {
    * B1 v A2. Clears every score and result, since this is a fresh bracket.
    *
    * A guess at the format, not a rule: every slot it fills can be changed on the
-   * board, team and seed label both. It writes which team, not the team's details,
-   * so names and logos keep following the groups afterwards.
+   * board. It writes which team, not the team's details, so names and logos keep
+   * following the groups afterwards.
    */
-  'bracket:seed'(ctx) {
+  'bracket:fill'(ctx) {
     const ranked = standings(ctx.collect('variables.groups'))
-    const place = (slot, group, position) => [
-      [`variables.bracket.${slot}.team`, teamKey(ranked[group][position - 1])],
-      [`variables.bracket.${slot}.seed`, `${group.toUpperCase()}${position}`],
-    ]
+    const place = (slot, group, position) => [`variables.bracket.${slot}.team`, teamKey(ranked[group][position - 1])]
 
     ctx.write([
       ...MATCHES.flatMap((match) => clearing(ctx, `variables.bracket.${match}`)),
-      ...place('sf1.top', 'a', 1),
-      ...place('sf1.bottom', 'b', 2),
-      ...place('sf2.top', 'b', 1),
-      ...place('sf2.bottom', 'a', 2),
+      place('sf1.top', 'a', 1),
+      place('sf1.bottom', 'b', 2),
+      place('sf2.top', 'b', 1),
+      place('sf2.bottom', 'a', 2),
     ])
   },
 
@@ -51,7 +48,7 @@ export const tournament = {
     if (slot) {
       const target = `variables.bracket.final.${slot}`
 
-      for (const field of BRACKET_FIELDS) writes.push([`${target}.${field}`, next ? ctx.read(`${base}.${next}.${field}`) : undefined])
+      writes.push([`${target}.team`, next ? ctx.read(`${base}.${next}.team`) : undefined])
       writes.push([`${target}.score`, undefined])
 
       if (ctx.read('variables.bracket.final.winner') === slot) writes.push(['variables.bracket.final.winner', undefined])

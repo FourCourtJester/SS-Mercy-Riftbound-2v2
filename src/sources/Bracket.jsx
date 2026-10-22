@@ -1,15 +1,15 @@
 import { useVelcroCollection, useVelcroValue } from '@single-studio/core'
-import { Image, Variable } from '@single-studio/core/source'
+import { Variable } from '@single-studio/core/source'
 
 import { Logo, Twinkle } from '../components/Brand'
-import { Fitted } from '../components/Fitted'
-import { Stage } from '../components/Stage'
-import { teamIndex } from '../components/tournament'
+import { PairLogos, PairNames } from '../components/Pair'
+import { HEIGHT, Stage } from '../components/Stage'
+import { pairName, teamIndex } from '../components/tournament'
 
 // The four-team single-elimination playoff: two semi-finals into a final.
 // Transparent -- stack it over the background source.
 //
-// A bracket slot names a team ('a1'); its name, players and logo are looked up in
+// A bracket slot names a team ('a1'); its players and their logos are looked up in
 // the groups on the way to air, so the two can never disagree.
 // Add to OBS as a Browser source pointed at #/source/bracket
 
@@ -39,7 +39,7 @@ export default function Bracket() {
   const teamAt = (match, side) => teams[read(`${match}.${side}.team`)]
 
   const winner = read('final.winner')
-  const champion = winner ? teamAt('final', winner)?.name : undefined
+  const champion = winner ? teamAt('final', winner) : undefined
 
   return (
     <Stage>
@@ -58,21 +58,7 @@ export default function Bracket() {
             <Match key={match} match={match} read={read} teamAt={teamAt} logos={logos} />
           ))}
 
-          <div
-            className={`absolute flex justify-center transition-all duration-700 ease-out ${champion ? 'translate-y-0 opacity-100' : 'translate-y-6 opacity-0'}`}
-            style={{ left: CARDS.final.x, top: CARDS.final.y + CARD_HEIGHT + 44, width: CARD_WIDTH }}
-          >
-            <div className="flex -rotate-2 items-center gap-5 rounded-[14px] border-[6px] border-merc-blue bg-merc-cream px-9 py-4 text-merc-blue shadow-[0_10px_0_rgba(4,10,32,0.55),0_0_60px_rgba(120,170,255,0.5)]">
-              <Twinkle className="h-10 w-10 shrink-0" />
-              <div className="flex min-w-0 flex-col items-center">
-                <span className="text-[22px] font-black tracking-[0.3em] uppercase [font-stretch:115%]">Champions</span>
-                <span className="max-w-[440px] type-display text-[46px]">
-                  <Fitted text={champion ?? ''} />
-                </span>
-              </div>
-              <Twinkle className="h-10 w-10 shrink-0" />
-            </div>
-          </div>
+          <Winners team={champion} logos={logos} />
         </>
       ) : null}
     </Stage>
@@ -124,41 +110,60 @@ function Match({ match, read, teamAt, logos }) {
 }
 
 function Team({ match, side, read, team, logos, winner }) {
-  const at = (field) => read(`${match}.${side}.${field}`)
-  const seed = at('seed')
-  const { name, logo, players } = team ?? {}
+  const score = read(`${match}.${side}.score`)
+  const players = team?.players ?? [{}, {}]
+  const named = Boolean(pairName(team))
   const won = winner === side
   const lost = Boolean(winner) && !won
 
   return (
     <div
-      className={`flex items-center gap-4 pr-4 transition-opacity duration-500 ${won ? 'bg-merc-blue/45' : ''} ${lost ? 'opacity-45' : ''}`}
+      className={`flex items-center gap-4 pr-4 pl-5 transition-opacity duration-500 ${won ? 'bg-merc-blue/45' : ''} ${lost ? 'opacity-45' : ''}`}
       style={{ height: ROW }}
     >
-      <div
-        className={`flex h-full w-[78px] shrink-0 items-center justify-center type-display text-[28px] ${won ? 'bg-merc-cream text-merc-blue' : 'bg-merc-cream/10 text-merc-cream/75'}`}
-      >
-        {seed ?? ''}
-      </div>
+      {logos ? <PairLogos players={players} size={64} className="border-2 border-merc-cream/15 bg-merc-ink/70" /> : null}
 
-      {logos ? (
-        <div className="flex h-[76px] w-[76px] shrink-0 items-center justify-center overflow-hidden rounded-[12px] border-2 border-merc-cream/15 bg-merc-ink/70 p-1.5">
-          {logo ? <Image value={logo} className="flex h-full w-full items-center justify-center" /> : <Twinkle className="h-8 w-8 text-merc-cream/25" />}
-        </div>
-      ) : null}
-
-      <div className="min-w-0 flex-1">
-        <div className={`type-display ${name ? 'text-[38px]' : 'text-[28px] text-merc-cream/40'}`}>
-          <Fitted text={name || WAITING[`${match}.${side}`] || 'TBD'} />
-        </div>
-        {name && players ? <div className="mt-1 truncate text-[21px] font-semibold tracking-wide text-merc-cream/70">{players}</div> : null}
-      </div>
+      <PairNames players={players} size={30} empty={WAITING[`${match}.${side}`] || 'TBD'} />
 
       <div
         className={`flex h-[78px] w-[92px] shrink-0 items-center justify-center rounded-[14px] type-display text-[46px] tabular-nums ${won ? 'bg-merc-cream text-merc-blue shadow-[0_0_26px_rgba(160,200,255,0.6)]' : 'bg-merc-ink/80 text-merc-cream'}`}
       >
-        {name ? (at('score') ?? 0) : ''}
+        {named ? (score ?? 0) : ''}
       </div>
+    </div>
+  )
+}
+
+/**
+ * Who won it all: the final winners' logos and names, under the final. Off until a
+ * final winner is marked, then rises into place; taking the result back takes it
+ * away again.
+ *
+ * Centred in the space between the final and the bottom of the screen, by a box
+ * that fills that space, so it stays centred whatever its own height.
+ */
+function Winners({ team, logos }) {
+  const shown = Boolean(team)
+  const below = CARDS.final.y + CARD_HEIGHT
+
+  return (
+    <div
+      className={`absolute flex flex-col justify-center transition-all duration-700 ease-out ${shown ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-6 opacity-0'}`}
+      style={{ left: CARDS.final.x, top: below, width: CARD_WIDTH, height: HEIGHT - below }}
+    >
+      {shown ? (
+        <div className="-rotate-1 rounded-[18px] border-[6px] border-merc-blue bg-merc-cream text-merc-blue shadow-[0_10px_0_rgba(4,10,32,0.55),0_0_60px_rgba(120,170,255,0.5)]">
+          <div className="flex items-center justify-center gap-3 border-b-[3px] border-merc-blue/15 py-2 text-[22px] font-black tracking-[0.3em] uppercase [font-stretch:115%]">
+            <Twinkle className="h-6 w-6" />
+            Winners
+            <Twinkle className="h-6 w-6" />
+          </div>
+          <div className="flex items-center gap-5 px-6 py-4">
+            {logos ? <PairLogos players={team.players} size={84} className="border-2 border-merc-blue/20 bg-merc-ink" /> : null}
+            <PairNames players={team.players} size={40} />
+          </div>
+        </div>
+      ) : null}
     </div>
   )
 }
