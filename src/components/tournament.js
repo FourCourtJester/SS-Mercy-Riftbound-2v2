@@ -2,12 +2,13 @@
 // the three can never disagree about who is first.
 //
 // Two pools of four play a round robin; the top two of each go to a four-team
-// single-elimination bracket. Every team lives at a fixed slot:
+// single-elimination bracket. A "team" is a pair of players with no name of its
+// own, and every team lives at a fixed slot:
 //
-//   variables.groups.a.1.name     team name
-//   variables.groups.a.1.players  "Player & Player", optional
-//   variables.groups.a.1.logo     an image URL or asset:<key>, optional
-//   variables.groups.a.1.w / .l / .pts
+//   variables.groups.a.1.p1.name  first player
+//   variables.groups.a.1.p1.logo  their logo: an image URL or asset:<key>, optional
+//   variables.groups.a.1.p2.name / .p2.logo   the second player, the same
+//   variables.groups.a.1.w / .l
 //   variables.groups.a.1.tb       tiebreak, board only: higher wins a dead heat
 //
 // Slots are where an operator typed a team, not where it ranks. Ranking is worked
@@ -17,8 +18,6 @@
 // groups is fixed on the bracket at the same moment:
 //
 //   variables.bracket.sf1.top.team   which team: a group slot key, 'a1' to 'b4'
-//   variables.bracket.sf1.top.seed   the label on air, 'A1' -- where they finished,
-//                                    fixed when seeded, editable by hand
 //   variables.bracket.sf1.top.score
 //   variables.bracket.sf1.winner     'top' or 'bottom'
 
@@ -28,8 +27,8 @@ export const SLOTS = ['1', '2', '3', '4']
 /** How many of each group go through to the bracket. */
 export const ADVANCE = 2
 
-/** What a bracket slot carries from one match to the next. Score and winner stay behind. */
-export const BRACKET_FIELDS = ['team', 'seed']
+/** The two players of a team, by the key their fields sit under. */
+export const PLAYERS = ['p1', 'p2']
 
 /** The bracket's three matches, and which final slot each semi's winner fills. */
 export const MATCHES = ['sf1', 'sf2', 'final']
@@ -38,7 +37,7 @@ export const FEEDS = { sf1: 'top', sf2: 'bottom' }
 const count = (value) => Number(value) || 0
 
 /**
- * The flat collection under `variables.groups` -- `{ 'a.1.name': 'Comets', ... }` --
+ * The flat collection under `variables.groups` -- `{ 'a.1.p1.name': 'Nova', ... }` --
  * as each group's teams in slot order.
  */
 export function teamsFrom(flat = {}) {
@@ -51,12 +50,9 @@ export function teamsFrom(flat = {}) {
         return {
           group,
           slot,
-          name: read('name'),
-          players: read('players'),
-          logo: read('logo'),
+          players: PLAYERS.map((player) => ({ name: read(`${player}.name`), logo: read(`${player}.logo`) })),
           w: count(read('w')),
           l: count(read('l')),
-          pts: count(read('pts')),
           tb: count(read('tb')),
         }
       }),
@@ -64,14 +60,21 @@ export function teamsFrom(flat = {}) {
   )
 }
 
-/**
- * Most points, then most wins, then fewest losses, then the operator's tiebreak --
- * head-to-head, game difference, whatever the event rules say. Nothing left to
- * separate two teams keeps slot order.
- */
-const compare = (a, b) => b.pts - a.pts || b.w - a.w || a.l - b.l || b.tb - a.tb || Number(a.slot) - Number(b.slot)
+/** "Nova & Orbit": a team's players, for anywhere it has to be one line. Empty if neither is named. */
+export const pairName = (team) =>
+  (team?.players ?? [])
+    .map((player) => player.name)
+    .filter(Boolean)
+    .join(' & ')
 
-const level = (a, b) => a.pts === b.pts && a.w === b.w && a.l === b.l && a.tb === b.tb
+/**
+ * Most wins, then fewest losses, then the operator's tiebreak -- head-to-head, game
+ * difference, whatever the event rules say. Nothing left to separate two teams keeps
+ * slot order.
+ */
+const compare = (a, b) => b.w - a.w || a.l - b.l || b.tb - a.tb || Number(a.slot) - Number(b.slot)
+
+const level = (a, b) => a.w === b.w && a.l === b.l && a.tb === b.tb
 
 /**
  * One group, best first. Each team gets a `rank`, shared with anyone it is level
@@ -79,15 +82,15 @@ const level = (a, b) => a.pts === b.pts && a.w === b.w && a.l === b.l && a.tb ==
  *
  * `advancing` means through, not merely placed: one of the top `ADVANCE`, and not
  * level with the first team below the cut. Two teams tied across the line are both
- * unmarked until a result or a tiebreak separates them -- a 1-0-0-0 group has one
- * team through, not two.
+ * unmarked until a result or a tiebreak separates them -- a group where one team has
+ * the only win has one team through, not two.
  *
  * Until the group has a result in it every team is level, so the ranks are simply
  * 1 to 4 in slot order (and the rule above marks nobody).
  */
 export function rank(teams) {
   const sorted = [...teams].sort(compare)
-  const started = teams.some((team) => team.w || team.l || team.pts || team.tb)
+  const started = teams.some((team) => team.w || team.l || team.tb)
   const below = sorted[ADVANCE]
 
   return sorted.map((team, index) => ({

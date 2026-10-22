@@ -1,9 +1,10 @@
 import { useLayoutEffect, useRef } from 'react'
 import { useVelcroCollection, useVelcroState, useVelcroValue } from '@single-studio/core'
-import { Image, Variable } from '@single-studio/core/source'
+import { Variable } from '@single-studio/core/source'
 
-import { Logo, Twinkle } from '../components/Brand'
+import { Logo } from '../components/Brand'
 import { Fitted } from '../components/Fitted'
+import { PairLogos, PairNames } from '../components/Pair'
 import { Stage } from '../components/Stage'
 import { standings } from '../components/tournament'
 
@@ -14,6 +15,7 @@ import { standings } from '../components/tournament'
 export default function GroupStandings() {
   const { value, loaded } = useVelcroCollection('variables.groups')
   const logos = useVelcroValue('variables.standings.logos') !== 'hidden'
+  const note = useVelcroValue('variables.standings.note')
   const ranked = standings(value)
 
   return (
@@ -32,15 +34,22 @@ export default function GroupStandings() {
         </div>
       ) : null}
 
-      <footer className="absolute bottom-[56px] left-1/2 -translate-x-1/2 whitespace-nowrap text-[26px] font-extrabold tracking-[0.12em] text-merc-cream/85 uppercase [font-stretch:115%]">
-        <Variable name="standings.note" fallback="Top 2 of each group advance to the playoffs" />
-      </footer>
+      {/* No footer at all when there is nothing to say. */}
+      {note ? (
+        <footer className="absolute bottom-[56px] left-1/2 -translate-x-1/2 whitespace-nowrap text-[26px] font-extrabold tracking-[0.12em] text-merc-cream/85 uppercase [font-stretch:115%]">
+          {note}
+        </footer>
+      ) : null}
     </Stage>
   )
 }
 
 const ROW = 124
 const GAP = 16
+
+/** The results columns, shared by the header labels and the rows so they line up. */
+const W_WIDTH = 96
+const L_WIDTH = 76
 
 function Group({ name, teams, logos }) {
   // Read here rather than through <Variable> so Fitted can measure it; nothing
@@ -50,19 +59,22 @@ function Group({ name, teams, logos }) {
   return (
     <section className="w-[800px]">
       <div className="mb-5 flex items-end justify-between pr-[22px]">
-        {/* Hugs a short name; a long one stops at what the W / L / PTS labels leave
-            (800 less their 302, the 22 of padding and a gap) and narrows to fit. */}
+        {/* Hugs a short name; a long one stops at what the W / L labels leave (800
+            less their 192, the 22 of padding and a gap) and narrows to fit. */}
         {loaded ? (
-          <div className="sticker max-w-[452px] min-w-0 -rotate-2 px-7 pt-3 pb-3.5 type-display text-[40px]">
+          <div className="sticker max-w-[562px] min-w-0 -rotate-2 px-7 pt-3 pb-3.5 type-display text-[40px]">
             <Fitted text={value || `Group ${name.toUpperCase()}`} />
           </div>
         ) : (
           <span />
         )}
         <div className="flex gap-5 text-[22px] font-extrabold tracking-[0.14em] text-merc-cream/70 [font-stretch:115%]">
-          <span className="w-[76px] text-center">W</span>
-          <span className="w-[76px] text-center">L</span>
-          <span className="w-[110px] text-center">PTS</span>
+          <span className="text-center" style={{ width: W_WIDTH }}>
+            W
+          </span>
+          <span className="text-center" style={{ width: L_WIDTH }}>
+            L
+          </span>
         </div>
       </div>
 
@@ -106,32 +118,20 @@ function Row({ team, logos }) {
         {team.rank}
       </div>
 
-      {logos ? (
-        <div className="flex h-[92px] w-[92px] shrink-0 items-center justify-center overflow-hidden rounded-[14px] border-2 border-merc-cream/15 bg-merc-ink/70 p-2">
-          {team.logo ? <Image value={team.logo} className="flex h-full w-full items-center justify-center" /> : <Twinkle className="h-9 w-9 text-merc-cream/25" />}
-        </div>
-      ) : null}
+      {logos ? <PairLogos players={team.players} size={76} className="border-2 border-merc-cream/15 bg-merc-ink/70" /> : null}
 
-      <div className="min-w-0 flex-1">
-        <div className={`type-display text-[42px] leading-[1.05] ${team.name ? '' : 'text-merc-cream/40'}`}>
-          <Fitted text={team.name || 'TBD'} />
-        </div>
-        {team.players ? (
-          <div className="mt-1.5 truncate text-[24px] font-semibold tracking-wide text-merc-cream/70">{team.players}</div>
-        ) : null}
-      </div>
+      <PairNames players={team.players} size={36} />
 
-      <Stat value={team.w} />
-      <Stat value={team.l} />
+      {/* Wins rank the table, so they take the emphasis points used to. */}
       <div
-        className={`flex h-[80px] w-[110px] shrink-0 items-center justify-center rounded-[14px] type-display text-[48px] ${advancing ? 'bg-merc-blue text-merc-cream shadow-[0_0_24px_rgba(59,123,255,0.55)]' : 'bg-merc-cream/10 text-merc-cream'}`}
+        className={`flex h-[80px] shrink-0 items-center justify-center rounded-[14px] type-display text-[48px] ${advancing ? 'bg-merc-blue text-merc-cream shadow-[0_0_24px_rgba(59,123,255,0.55)]' : 'bg-merc-cream/10 text-merc-cream'}`}
+        style={{ width: W_WIDTH }}
       >
-        {team.pts}
+        {team.w}
+      </div>
+      <div className="shrink-0 text-center text-[40px] font-extrabold tabular-nums [font-stretch:110%]" style={{ width: L_WIDTH }}>
+        {team.l}
       </div>
     </div>
   )
-}
-
-function Stat({ value }) {
-  return <div className="w-[76px] shrink-0 text-center text-[40px] font-extrabold tabular-nums [font-stretch:110%]">{value}</div>
 }
