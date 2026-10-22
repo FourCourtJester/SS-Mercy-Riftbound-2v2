@@ -1,9 +1,16 @@
 # Mercy's 2v2 Invitational — working notes
 
-Show-specific knowledge for anyone (person or agent) picking this studio up. The
-framework's rules are in [AGENTS.md](AGENTS.md); read that first. This file is what
-that one cannot know: the event, the decisions made with the producer, and what was
-learned building it. Keep it current — when something is learned, it goes here.
+Show-specific knowledge for anyone (person or agent) picking this studio up. Claude
+reads this file automatically; other agents arrive through [AGENTS.md](AGENTS.md),
+which points here and holds the framework's own rules — read both. This file is what
+AGENTS.md cannot know: the event, the decisions made with the producer and the
+client, and what was learned building it. Keep it current — when something is
+learned, it goes here. [README.md](README.md) is the human guide (OBS setup, running
+the show); keep its operator steps in line with this file.
+
+**State of play (2026-10-22):** built, released and live. v1.0 and the client's first
+round of feedback (v1.1) are merged; the README rewrite is PR #3. Every client
+question is answered. Anything left is small.
 
 ## Working agreements
 
@@ -42,7 +49,7 @@ site are public, and one shows the casters' photos.
 | Slate | `#/source/slate` | Mercy, logo, message, optional countdown. Transparent. |
 | Caster webcams | `#/source/caster-webcams` | Two 16:9 frames + name plates + message bar. Transparent. |
 | Group standings | `#/source/group-standings` | Both pools, ranked. Transparent. |
-| Bracket | `#/source/bracket` | Semis → Final, champion banner. Transparent. |
+| Bracket | `#/source/bracket` | Semis → Final, then the Winners box. Transparent. |
 
 Stacking, bottom to top: **background → (cameras) → graphic**. Each scene gets its own
 copy of the background; copies stay in step (see below), so cuts are seamless.
@@ -150,14 +157,16 @@ share one store with the browser sources.
   shared `<defs>` referenced by id.
 - [Fitted](src/components/Fitted.jsx) — one line, never wraps or clips: narrows the
   font's width axis 125% → 75%, then `scaleX` with no floor. Player names and the
-  group-name stickers use it. On the standings a player name gets ~250px at 36px
-  with logos shown (~420px hidden); "Interstellarwanderer" (20 characters) narrows
-  but reads.
+  group-name stickers use it. On the standings a player name gets ~274px at 36px
+  with logos shown (~454px hidden: 800 less rank 92, logos 160, W 96, L 76, four
+  20px gaps and 22px padding); "Interstellarwanderer" (20 characters) narrows but
+  reads.
 - [Pair.jsx](src/components/Pair.jsx) — `PairLogos` (two circles side by side —
   player logos are round; the square box clips to the circle, so whitespace corners
-  in an image disappear; an empty one keeps its place with a faint star) and `PairNames` (two fitted lines; a
-  pair with nobody named shows one dimmed placeholder, one missing name shows
-  "TBD"). Standings, bracket and the Winners box all use them at their own sizes.
+  in an image disappear; an empty one keeps its place with a faint star) and
+  `PairNames` (two fitted lines; a pair with nobody named shows one dimmed
+  placeholder, one missing name shows "TBD"). Standings (76px logos, 36px names),
+  bracket (64 / 30) and the Winners box (84 / 40) all use them.
 - The bracket's **Winners** box sits under the Final with the winning pair's logos
   and names, and appears only once a final winner is marked. It is centred in the
   space between the Final and the bottom of the screen by a box filling that space.
@@ -177,9 +186,9 @@ share one store with the browser sources.
   three matches.
 - [Panel](src/control/Panel.jsx) — core `Panel`'s markup plus two things: an
   `actions` slot for header buttons (Reset countdown, Swap casters, Zero all results,
-  Seed / Clear bracket; they take `HEADER_BUTTON`), and folding — the title is a
-  button that collapses the body, actions stay usable while folded. Every panel on
-  this board goes through it.
+  Fill from standings / Clear bracket; they take `HEADER_BUTTON`), and folding — the
+  title is a button that collapses the body, actions stay usable while folded. Every
+  panel on this board goes through it.
 - Folding, panels and team cards alike, is [collapse.jsx](src/control/collapse.jsx):
   `useCollapsed(initial = true)` is plain component state. **Everything starts
   folded on every load** — panels and team cards — the producer's call: a fresh
@@ -199,9 +208,9 @@ share one store with the browser sources.
 - Bracket: matches stack at md and go 3 across from lg (a third of the board at md is
   ~200px — too narrow for a stepper and anything beside it). Each team is one `Row`:
   team dropdown, score, result — `md` 6/4/2 on one line, `lg` 12 then 8/4.
-- [Divider](src/control/Divider.jsx) — an `<hr>` between groups of controls in a
-  panel (Slate, Caster webcams, Group standings). Core's `Break` is deprecated and
-  draws nothing.
+- [Divider](src/control/Divider.jsx) — an `<hr>` between groups of controls (Slate,
+  Caster webcams, Group standings, and inside each team card). Core's `Break` is
+  deprecated and draws nothing.
 - Zebra striping: even panels are lighter (rule in `index.css`, scoped to
   `.ss-control`), and team cards / bracket teams alternate with `odd:`/`even:`.
 - `.ss-control { color-scheme: dark }` makes native widgets (the time input's clock
@@ -220,7 +229,7 @@ share one store with the browser sources.
 - **Measure text after the webfont loads.** `document.fonts.ready` can resolve before
   a lazily-used font starts loading; a `ResizeObserver` on the text catches the swap.
 - `useVelcroCollection('variables.groups')` / `ctx.collect` return **flat keys**
-  relative to the prefix (`'a.1.name'`), counters included.
+  relative to the prefix (`'a.1.p1.name'`), counters included.
 - `ctx.write` with a number on a counter path resets it; `undefined` removes it.
 - The `Timer` component's `fallback` shows when no clock runs — the slate passes `''`
   and uses `useTimer('timers.slate').active` to fade the box rather than collapse it.
@@ -266,6 +275,35 @@ the project's dependencies:
    with two full-size iframes (background, then the graphic), plus coloured boxes at
    the camera positions for `caster-webcams`. Write data from a studio page first;
    the composite page has no port.
+7. **Go via `about:blank` after a composite.** `setContent` keeps the page's URL, so a
+   following `goto` to the same address (or one differing only after `#`) is a
+   same-document hash change: the app never starts and `window.__port` never
+   appears.
+8. **Folded controls are still in the page, hidden.** A label on one team card
+   matches on all eight; count only visible ones, or open the card and screenshot
+   it, rather than expecting exactly one match.
+9. **Logos in tests:** any file in `public/` works as a logo value
+   (`'./brand/mercy.png'`). The board's logo picker then shows the path in orange,
+   because it expects images from its library; that's expected with test data.
+10. Test scripts are not kept in the repo. The steps above are enough to rebuild them
+    in a few minutes.
+
+## Releasing
+
+How v1.0 and v1.1 went out; do the same next time, once the producer asks.
+
+1. Branch off an up-to-date `main` (`release/vX.Y`, or `docs/…` for docs only), one
+   commit with a message that says what changed and why, then a PR whose
+   description covers what changed, how it was checked, and anything left open.
+2. There are **no PR checks**: the only workflow is the Pages deploy, which runs on
+   pushes to `main`. The stand-in is a fresh clone of the branch, `npm install` and
+   `npm run build`.
+3. Merge with a merge commit (`gh pr merge <n> --merge`), as #1 and #2 were.
+4. Watch the Pages run on `main` (`gh run watch`), then confirm nothing deployed after
+   it (`gh run list` should show no `pages-build-deployment`; see Deploying).
+5. Load the live board and every graphic with `?v=<anything>` and check for errors
+   and missing files, and for something only the new version has.
+6. `git switch main && git pull --ff-only` so the working tree matches what's live.
 
 ## Answered by the client
 
@@ -274,7 +312,15 @@ the project's dependencies:
 - **Casters:** always two — "today". A solo or three-caster layout would be a new
   variant of `caster-webcams`, if it ever comes up.
 
-Nothing is open.
+Nothing is open with the client.
+
+## For the producer to decide
+
+- `LICENSE` is still the template's Unlicense, which dedicates the repo to the public
+  domain. The template suggests deleting it once it is a real show; the README notes
+  that the client's brand art is not covered either way. Leave it unless asked.
+- `.github/FUNDING.yml` still shows Single Studio's sponsor accounts (the
+  producer's own). Leave it unless asked.
 
 ## Upstream notes
 
