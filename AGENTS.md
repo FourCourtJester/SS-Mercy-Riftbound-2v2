@@ -4,6 +4,19 @@ For anyone — person or agent — building a show here. This is a
 [Single Studio](https://fourcourtjester.github.io/Single-Studio/) project: an
 operator's board that runs as a dock inside OBS, and one browser source per graphic.
 
+> **This studio is Mercy's 2v2 Invitational, and it is built and live.** This file
+> is the framework's general guide. Everything specific to this show is in
+> **[CLAUDE.md](CLAUDE.md)**, written for any agent, not only Claude: the event, the
+> data shape, decisions the client has made, gotchas, how changes are checked, and
+> how releases are done. **Read it before changing anything.** In short:
+>
+> - Do not commit or push until the producer asks.
+> - `STUDIO_ID` is `ss-mercy-riftbound-2v2`. Changing it empties the live show.
+> - The bracket's manual dropdowns are a deliberate emergency override; keep them.
+> - Check every change by looking: graphics at 1920×1080, the board from 768px up.
+>
+> [README.md](README.md) is the human guide: OBS setup and running the show.
+
 ## What to edit, and what not to
 
 |                               |                                                                   |

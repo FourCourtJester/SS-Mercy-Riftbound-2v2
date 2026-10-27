@@ -2,6 +2,7 @@ import { useVelcroValue } from '@single-studio/core'
 import { Variable } from '@single-studio/core/source'
 
 import { Logo } from '../components/Brand'
+import { FitLines } from '../components/FitLines'
 import { Stage } from '../components/Stage'
 
 // Two 16:9 webcam frames, with a name plate under each.
@@ -31,11 +32,17 @@ export default function CasterWebcams() {
         <Window key={index} number={index + 1} {...frame} />
       ))}
 
+      {/* Two lines at full size before anything shrinks, then smaller -- never a
+          third line. Centred on y 966 by a band around it, so a second line grows the
+          bar up and down evenly and stays clear of the name plates (which end at 890
+          with a handle). */}
       <div
-        className={`absolute top-[910px] left-1/2 -translate-x-1/2 transition-opacity duration-500 ${message ? 'opacity-100' : 'opacity-0'}`}
+        className={`absolute top-[886px] left-1/2 flex h-[160px] w-[1300px] -translate-x-1/2 items-center transition-opacity duration-500 ${message ? 'opacity-100' : 'opacity-0'}`}
       >
-        <div className="glass flex h-[96px] w-[1300px] items-center justify-center rounded-full px-16 text-center type-display text-[44px] tracking-wide">
-          <Variable name="casters.message" fit />
+        <div className="glass flex min-h-[96px] w-full items-center justify-center rounded-[48px] px-16 py-3 text-center type-display tracking-wide">
+          <FitLines lines={2} max={44} min={28} strict className="w-full text-balance">
+            <Variable name="casters.message" />
+          </FitLines>
         </div>
       </div>
     </Stage>
