@@ -8,9 +8,10 @@ client, and what was learned building it. Keep it current — when something is
 learned, it goes here. [README.md](README.md) is the human guide (OBS setup, running
 the show); keep its operator steps in line with this file.
 
-**State of play (2026-10-22):** built, released and live. v1.0 and the client's first
-round of feedback (v1.1) are merged; the README rewrite is PR #3. Every client
-question is answered. Anything left is small.
+**State of play (2026-10-27):** built, released and live. v1.0 and the client's first
+round of feedback (v1.1) are merged. PR #3 carries the README rewrite, the handover
+notes and a second client request — the caster message wrapping to two lines before
+it shrinks. Every client question is answered.
 
 ## Working agreements
 
@@ -85,7 +86,7 @@ board and mutations so they never disagree about who is first.
 | `slate.message` | Slate text. Fallback "Starting Soon". |
 | `timers.slate` | The slate countdown (a `timers` path, not `variables`). |
 | `casters.{1,2}.name` / `.handle` | Name plates. Handle optional. |
-| `casters.message` | Bar under the cameras; empty hides it. |
+| `casters.message` | Bar under the cameras; empty hides it. Two lines at most (see FitLines). |
 | `standings.title` / `.note` / `.a` / `.b` / `.logos` | Headings, footer (empty hides it), group names, `'hidden'` hides logos. |
 | `groups.{a,b}.{1-4}.{p1,p2}.name` / `.logo` | A team's two players, at a fixed slot. Logos optional. |
 | `groups.{a,b}.{1-4}.w` / `.l` / `.tb` | Results. Counters (Stepper writes increments). |
@@ -174,9 +175,16 @@ share one store with the browser sources.
   leave — then fit. A content-sized box with a `max-w` works with Fitted;
   core's `<Variable fit>` does not, because it measures against the first ancestor
   whose width does not depend on the text, which here is the whole 800px row.
-- [FitLines](src/components/FitLines.jsx) — wraps, but steps the font down (slate:
-  76 → 52px) to stay within N lines; past the floor it wraps further rather than
-  shrink into unreadable.
+- [FitLines](src/components/FitLines.jsx) — wraps, but steps the font down to stay
+  within N lines. By default it stops at `min` and wraps further rather than shrink
+  into unreadable — the slate (76 → 52px; a 63-character message ends on four lines
+  at 52). With `strict` it keeps shrinking past `min` (to a 12px floor) instead, for
+  a box that cannot take another line — the caster message bar (two lines, 44 →
+  28px, then smaller).
+- The caster message bar is centred on y 966 by a band around it, so a second line
+  grows it evenly up and down. Its corners are a fixed 48px radius, not
+  `rounded-full`, so one line is the same pill as before and two lines a rounded
+  box. With handles the name plates end at y 890; the bar's top is 20–28px below.
 - The slate keeps room for two full lines of message and for the countdown even when
   either is short or off, so changes on air never move the logo.
 
@@ -244,9 +252,12 @@ the project's dependencies:
 1. Install Playwright somewhere outside the repo (`npm i playwright` in a temp dir,
    then `npx playwright install chromium-headless-shell`).
 2. On this WSL machine Chromium is missing `libnss3`, `libnspr4` and `libasound2`. No
-   sudo needed: `apt-get download libnspr4 libnss3 libasound2t64`, `dpkg-deb -x` each
-   into a folder, and run with `LD_LIBRARY_PATH` pointing at its
-   `usr/lib/x86_64-linux-gnu` and `usr/lib/x86_64-linux-gnu/nss`.
+   sudo needed: `apt-get download libnspr4 libnss3 libasound2` (this is Ubuntu 22.04;
+   on 24.04 and later the last is `libasound2t64`, and `apt-get download` fails
+   outright if any name is wrong), `dpkg-deb -x` each into a folder, and run with
+   `LD_LIBRARY_PATH` pointing at its `usr/lib/x86_64-linux-gnu` and
+   `usr/lib/x86_64-linux-gnu/nss`. The browser itself survives in
+   `~/.cache/ms-playwright`; match it with `playwright@1.56.1`.
 3. `npm run dev -- --port 5199 --strictPort`, then screenshot `#/source/<name>` at a
    1920×1080 viewport.
 4. **Seeding data:** wrap `SharedWorker` in an init script to keep the page's port,
